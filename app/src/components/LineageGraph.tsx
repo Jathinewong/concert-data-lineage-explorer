@@ -134,7 +134,7 @@ const LineageGraph = () => {
       </div>
 
       {selectedNode ? (
-        <aside style={styles.panel}>
+        <aside style={styles.panel} tabIndex={0} aria-label="Selected node details">
           <h2 style={{ margin: '0 0 8px', fontSize: 24 }}>{selectedNode.label}</h2>
           <span
             style={{
