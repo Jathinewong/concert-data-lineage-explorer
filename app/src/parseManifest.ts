@@ -47,7 +47,7 @@ const NODE_WIDTH = 240
 const NODE_HEIGHT = 88
 
 const isDbtNodeType = (resourceType: string): resourceType is DbtNodeType => {
-  return resourceType === 'model' || resourceType === 'seed' || resourceType === 'source'
+  return (['model', 'seed', 'source'] as const).includes(resourceType as DbtNodeType)
 }
 
 const getCatalogRelation = (
@@ -66,7 +66,7 @@ const fetchJson = async <T>(url: string): Promise<T> => {
   const response = await fetch(url)
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch ${url}: ${response.status}`)
+    throw new Error(`Failed to fetch ${url}: ${response.status} ${response.statusText}`)
   }
 
   return (await response.json()) as T
