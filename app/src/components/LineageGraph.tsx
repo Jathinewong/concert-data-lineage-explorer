@@ -6,25 +6,19 @@ import ReactFlow, {
   Controls,
   MiniMap,
   type Edge,
+  type Node,
 } from 'reactflow'
 import 'reactflow/dist/style.css'
+import type { LineageNodeData } from '../types'
+import LineageNode from './LineageNode'
 import {
+  BASE_NODE_HEIGHT,
   BASE_NODE_WIDTH,
   fetchDbtNodes,
   layoutGraph,
-  type ColumnInfo,
   type DbtNode,
   type LayoutOptions,
 } from '../parseManifest'
-
-interface LineageNodeData {
-  label: string
-  nodeType: 'model' | 'seed' | 'source'
-  schema: string
-  description: string
-  columns: ColumnInfo[]
-  rawCode: string
-}
 
 const nodeColors: Record<LineageNodeData['nodeType'], string> = {
   model: '#3b82f6',
@@ -33,8 +27,8 @@ const nodeColors: Record<LineageNodeData['nodeType'], string> = {
 }
 
 const DEFAULT_LAYOUT: LayoutOptions = {
-  nodeSpacing: 40,
-  rankSpacing: 120,
+  nodeSpacing: 20,
+  rankSpacing: 80,
   nodeSizeMultiplier: 1.0,
 }
 
@@ -46,28 +40,31 @@ const styles = {
     top: 12,
     left: 12,
     zIndex: 10,
-    backgroundColor: '#ffffff',
-    border: '1px solid #e2e8f0',
+    backgroundColor: '#1a1d35',
+    border: '1px solid #2d3154',
     borderRadius: 10,
     padding: 12,
     width: 280,
-    boxShadow: '0 1px 3px rgba(15, 23, 42, 0.1)',
+    boxShadow: '0 4px 14px rgba(0, 0, 0, 0.35)',
   } as const,
   searchInput: {
     width: '100%',
     boxSizing: 'border-box',
     padding: '8px 10px',
     borderRadius: 8,
-    border: '1px solid #cbd5e1',
+    border: '1px solid #2d3154',
+    backgroundColor: '#1e2132',
+    color: '#f1f5f9',
     marginBottom: 12,
     fontSize: 14,
+    outline: 'none',
   } as const,
   panel: {
     height: '100%',
     width: 384,
     overflowY: 'auto',
-    borderLeft: '1px solid #e2e8f0',
-    backgroundColor: '#fff',
+    borderLeft: '1px solid #2d3154',
+    backgroundColor: '#1a1d35',
     padding: 16,
     boxSizing: 'border-box',
   } as const,
@@ -127,6 +124,7 @@ const LineageGraph = () => {
     seed: true,
     source: true,
   })
+  const flowNodeTypes = useMemo(() => ({ lineageNode: LineageNode }), [])
 
   useEffect(() => {
     const loadGraph = async () => {
@@ -149,13 +147,23 @@ const LineageGraph = () => {
     () =>
       parsedGraph.nodes.map((node) => ({
         ...node,
+        type: 'lineageNode',
         data: node.data as LineageNodeData,
       })),
     [parsedGraph.nodes],
   )
 
   const baseEdges = useMemo(
-    () => parsedGraph.edges.map((edge) => ({ ...edge, type: 'smoothstep' })),
+    () =>
+      parsedGraph.edges.map((edge) => ({
+        ...edge,
+        type: 'smoothstep',
+        animated: false,
+        style: {
+          stroke: '#2d3154',
+          strokeWidth: 1.5,
+        },
+      })),
     [parsedGraph.edges],
   )
 
@@ -241,21 +249,21 @@ const LineageGraph = () => {
 
           return {
             ...node,
+            selected: isSelected,
+            data: {
+              ...node.data,
+              isConnected: hasSelection && isHighlighted,
+              isDimmed: hasSelection && !isHighlighted,
+            },
             style: {
-              border: `2px solid ${nodeColors[node.data.nodeType]}`,
-              borderRadius: 10,
-              backgroundColor: isSelected
-                ? '#dbeafe'
-                : isHighlighted
-                  ? '#f8fafc'
-                  : '#ffffff',
-               padding: 8,
-               width: BASE_NODE_WIDTH * layoutOptions.nodeSizeMultiplier,
-               opacity: hasSelection && !isHighlighted ? 0.25 : 1,
-               boxShadow: isSelected ? '0 0 0 2px rgba(59, 130, 246, 0.35)' : 'none',
-             },
-           }
-         }),
+              width: BASE_NODE_WIDTH * layoutOptions.nodeSizeMultiplier,
+              height: BASE_NODE_HEIGHT * layoutOptions.nodeSizeMultiplier,
+              padding: 0,
+              border: 'none',
+              background: 'transparent',
+            },
+          }
+        }),
     [baseNodes, highlightedNodeIds, layoutOptions.nodeSizeMultiplier, selectedNodeId, visibleNodeIds],
   )
 
@@ -267,10 +275,11 @@ const LineageGraph = () => {
 
         return {
           ...edge,
+          animated: false,
           style: {
-            stroke: isHighlighted ? '#2563eb' : '#94a3b8',
+            stroke: isHighlighted ? '#3b82f6' : '#2d3154',
             strokeWidth: isHighlighted ? 2.5 : 1.5,
-            opacity: hasSelection && !isHighlighted ? 0.15 : 0.8,
+            opacity: hasSelection && !isHighlighted ? 0.1 : 1,
           },
         }
       }),
@@ -285,7 +294,7 @@ const LineageGraph = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: '#f8fafc',
+          backgroundColor: '#13152a',
         }}
       >
         <div
@@ -293,7 +302,7 @@ const LineageGraph = () => {
             width: 40,
             height: 40,
             borderRadius: '50%',
-            border: '4px solid #cbd5e1',
+            border: '4px solid #2d3154',
             borderTopColor: '#3b82f6',
             animation: 'spin 1s linear infinite',
           }}
@@ -310,8 +319,8 @@ const LineageGraph = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: '#f8fafc',
-          color: '#dc2626',
+          backgroundColor: '#13152a',
+          color: '#fda4af',
           textAlign: 'center',
           padding: 16,
           boxSizing: 'border-box',
@@ -324,9 +333,10 @@ const LineageGraph = () => {
 
   return (
     <div style={{ ...styles.full, display: 'flex' }}>
-      <div style={styles.graphContainer}>
+      <div style={{ ...styles.graphContainer, backgroundColor: '#13152a' }}>
         <section style={styles.controlsPanel} aria-label="Search and filters">
           <input
+            className="lineage-search-input"
             type="search"
             placeholder="Search model or column..."
             value={searchQuery}
@@ -336,7 +346,10 @@ const LineageGraph = () => {
 
           <div style={{ display: 'flex', gap: 12, marginBottom: 8 }}>
             {(['model', 'seed', 'source'] as const).map((nodeType) => (
-              <label key={nodeType} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
+              <label
+                key={nodeType}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#94a3b8' }}
+              >
                 <input
                   type="checkbox"
                   checked={nodeTypeFilters[nodeType]}
@@ -346,17 +359,18 @@ const LineageGraph = () => {
                       [nodeType]: event.target.checked,
                     }))
                   }
+                  style={{ accentColor: '#3b82f6' }}
                 />
                 {nodeType}
               </label>
             ))}
           </div>
 
-          <p style={{ margin: 0, fontSize: 12, color: '#475569' }}>
+          <p style={{ margin: 0, fontSize: 12, color: '#94a3b8' }}>
             Showing {displayedNodes.length} of {baseNodes.length} nodes
           </p>
 
-          <hr style={{ border: 0, borderTop: '1px solid #e2e8f0', margin: '12px 0' }} />
+          <hr style={{ border: 0, borderTop: '1px solid #2d3154', margin: '12px 0' }} />
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
             <span
@@ -378,10 +392,10 @@ const LineageGraph = () => {
                 fontSize: 11,
                 padding: '2px 8px',
                 borderRadius: 6,
-                border: '1px solid #cbd5e1',
-                backgroundColor: '#f8fafc',
+                border: '1px solid #2d3154',
+                backgroundColor: '#252840',
                 cursor: 'pointer',
-                color: '#475569',
+                color: '#94a3b8',
               }}
             >
               Reset
@@ -389,7 +403,7 @@ const LineageGraph = () => {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-            <label htmlFor="node-spacing" style={{ fontSize: 12, color: '#475569', width: 90, flexShrink: 0 }}>
+            <label htmlFor="node-spacing" style={{ fontSize: 12, color: '#94a3b8', width: 90, flexShrink: 0 }}>
               Node Spacing
             </label>
             <input
@@ -407,13 +421,13 @@ const LineageGraph = () => {
               }
               style={{ flex: 1, accentColor: '#3b82f6' }}
             />
-            <span style={{ fontSize: 12, color: '#1e293b', width: 36, textAlign: 'right' }}>
+            <span style={{ fontSize: 12, color: '#f1f5f9', width: 36, textAlign: 'right' }}>
               {layoutOptions.nodeSpacing}
             </span>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-            <label htmlFor="rank-spacing" style={{ fontSize: 12, color: '#475569', width: 90, flexShrink: 0 }}>
+            <label htmlFor="rank-spacing" style={{ fontSize: 12, color: '#94a3b8', width: 90, flexShrink: 0 }}>
               Rank Spacing
             </label>
             <input
@@ -431,13 +445,13 @@ const LineageGraph = () => {
               }
               style={{ flex: 1, accentColor: '#3b82f6' }}
             />
-            <span style={{ fontSize: 12, color: '#1e293b', width: 36, textAlign: 'right' }}>
+            <span style={{ fontSize: 12, color: '#f1f5f9', width: 36, textAlign: 'right' }}>
               {layoutOptions.rankSpacing}
             </span>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-            <label htmlFor="node-size" style={{ fontSize: 12, color: '#475569', width: 90, flexShrink: 0 }}>
+            <label htmlFor="node-size" style={{ fontSize: 12, color: '#94a3b8', width: 90, flexShrink: 0 }}>
               Node Size
             </label>
             <input
@@ -455,7 +469,7 @@ const LineageGraph = () => {
               }
               style={{ flex: 1, accentColor: '#3b82f6' }}
             />
-            <span style={{ fontSize: 12, color: '#1e293b', width: 36, textAlign: 'right' }}>
+            <span style={{ fontSize: 12, color: '#f1f5f9', width: 36, textAlign: 'right' }}>
               {layoutOptions.nodeSizeMultiplier.toFixed(1)}×
             </span>
           </div>
@@ -464,6 +478,7 @@ const LineageGraph = () => {
         <ReactFlow
           nodes={displayedNodes}
           edges={displayedEdges}
+          nodeTypes={flowNodeTypes}
           fitView
           onNodeClick={(_, node) => {
             setSelectedNodeId(node.id)
@@ -473,23 +488,32 @@ const LineageGraph = () => {
             setSelectedNodeId(null)
             setShowRawSql(false)
           }}
+          style={{ backgroundColor: '#13152a' }}
         >
-          <MiniMap position="bottom-right" zoomable pannable />
+          <MiniMap
+            position="bottom-right"
+            zoomable
+            pannable
+            style={{ backgroundColor: '#1a1d35', border: '1px solid #2d3154' }}
+            nodeColor={(node: Node) => nodeColors[(node.data as LineageNodeData).nodeType]}
+            maskColor="rgba(19,21,42,0.7)"
+          />
           <Controls position="bottom-left" />
-          <Background variant={BackgroundVariant.Dots} gap={16} size={1} />
+          <Background variant={BackgroundVariant.Dots} gap={16} size={1} color="#1e2132" />
         </ReactFlow>
       </div>
 
       {selectedNode ? (
         <aside style={styles.panel} tabIndex={0} aria-label="Selected node details">
-          <h2 style={{ margin: '0 0 8px', fontSize: 24 }}>{selectedNode.label}</h2>
+          <h2 style={{ margin: '0 0 8px', fontSize: 24, color: '#f1f5f9' }}>{selectedNode.label}</h2>
           <span
             style={{
               display: 'inline-block',
               marginBottom: 12,
               padding: '4px 8px',
               borderRadius: 9999,
-              backgroundColor: '#f1f5f9',
+              backgroundColor: '#252840',
+              color: '#94a3b8',
               fontSize: 12,
               fontWeight: 600,
               textTransform: 'uppercase',
@@ -497,28 +521,30 @@ const LineageGraph = () => {
           >
             {selectedNode.nodeType}
           </span>
-          <p style={{ margin: '0 0 8px', fontSize: 14 }}>
-            <span style={{ fontWeight: 600 }}>Schema:</span> {selectedNode.schema || 'N/A'}
+          <p style={{ margin: '0 0 8px', fontSize: 14, color: '#94a3b8' }}>
+            <span style={{ fontWeight: 600, color: '#64748b' }}>Schema:</span> {selectedNode.schema || 'N/A'}
           </p>
-          <p style={{ margin: '0 0 16px', fontSize: 14 }}>
+          <p style={{ margin: '0 0 16px', fontSize: 14, color: '#94a3b8' }}>
             {selectedNode.description || 'No description available.'}
           </p>
-          <h3 style={{ margin: '0 0 8px', fontSize: 12, fontWeight: 600, textTransform: 'uppercase' }}>
+          <h3
+            style={{ margin: '0 0 8px', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', color: '#f1f5f9' }}
+          >
             COLUMNS ({selectedNode.columns.length})
           </h3>
           {selectedNode.columns.length === 0 ? (
-            <p style={{ margin: 0, fontSize: 14 }}>No columns found.</p>
+            <p style={{ margin: 0, fontSize: 14, color: '#94a3b8' }}>No columns found.</p>
           ) : (
             <div style={{ margin: 0 }}>
               {selectedNode.columns.map((column) => (
                 <div key={column.name}>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: '#1e293b', margin: 0 }}>{column.name}</p>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: '#f1f5f9', margin: 0 }}>{column.name}</p>
                   {column.description ? (
-                    <p style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic', margin: '2px 0 8px 12px' }}>
+                    <p style={{ fontSize: 12, color: '#64748b', fontStyle: 'italic', margin: '2px 0 8px 12px' }}>
                       └─ {column.description}
                     </p>
                   ) : (
-                    <p style={{ fontSize: 12, color: '#cbd5e1', fontStyle: 'italic', margin: '2px 0 8px 12px' }}>
+                    <p style={{ fontSize: 12, color: '#64748b', fontStyle: 'italic', margin: '2px 0 8px 12px' }}>
                       └─ No description
                     </p>
                   )}
@@ -529,9 +555,13 @@ const LineageGraph = () => {
 
           {selectedNode.rawCode ? (
             <>
-              <hr style={{ border: 0, borderTop: '1px solid #e2e8f0', margin: '12px 0' }} />
+              <hr style={{ border: 0, borderTop: '1px solid #2d3154', margin: '12px 0' }} />
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <h3 style={{ margin: 0, fontSize: 12, fontWeight: 600, textTransform: 'uppercase' }}>RAW SQL</h3>
+                <h3
+                  style={{ margin: 0, fontSize: 12, fontWeight: 600, textTransform: 'uppercase', color: '#f1f5f9' }}
+                >
+                  RAW SQL
+                </h3>
                 <button
                   type="button"
                   onClick={() => setShowRawSql((previous) => !previous)}
@@ -539,10 +569,10 @@ const LineageGraph = () => {
                     fontSize: 11,
                     padding: '2px 8px',
                     borderRadius: 6,
-                    border: '1px solid #cbd5e1',
-                    backgroundColor: '#f8fafc',
+                    border: '1px solid #2d3154',
+                    backgroundColor: '#252840',
                     cursor: 'pointer',
-                    color: '#475569',
+                    color: '#94a3b8',
                   }}
                 >
                   {showRawSql ? '▲ hide' : '▼ show'}
@@ -550,12 +580,13 @@ const LineageGraph = () => {
               </div>
               {showRawSql ? (
                 <pre
-                  style={{
-                    fontFamily: 'monospace',
-                    fontSize: 12,
-                    backgroundColor: '#f8fafc',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: 6,
+                    style={{
+                      fontFamily: 'monospace',
+                      fontSize: 12,
+                      backgroundColor: '#13152a',
+                      border: '1px solid #2d3154',
+                      color: '#94a3b8',
+                      borderRadius: 6,
                     padding: 12,
                     overflowX: 'auto',
                     overflowY: 'auto',

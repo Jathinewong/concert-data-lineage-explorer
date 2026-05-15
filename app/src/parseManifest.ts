@@ -57,12 +57,12 @@ interface CatalogFile {
   sources?: Record<string, CatalogRelation>
 }
 
-export const BASE_NODE_WIDTH = 240
-export const BASE_NODE_HEIGHT = 88
+export const BASE_NODE_WIDTH = 280
+export const BASE_NODE_HEIGHT = 64
 
 const DEFAULT_LAYOUT_OPTIONS: LayoutOptions = {
-  nodeSpacing: 40,
-  rankSpacing: 120,
+  nodeSpacing: 20,
+  rankSpacing: 80,
   nodeSizeMultiplier: 1.0,
 }
 
@@ -178,6 +178,7 @@ export const layoutGraph = (dbtNodes: DbtNode[], options: LayoutOptions): Parsed
 
   const reactFlowNodes: Node[] = dbtNodes.map((node) => ({
     id: node.id,
+    type: 'lineageNode',
     data: {
       label: node.label,
       nodeType: node.nodeType,
