@@ -2,10 +2,45 @@ import { useState } from 'react'
 import { Handle, Position, type NodeProps } from 'reactflow'
 import type { LineageNodeData } from '../types'
 
-const typeStyles: Record<LineageNodeData['nodeType'], { icon: string; iconColor: string; accentColor: string }> = {
-  model: { icon: '◈', iconColor: '#00afc6', accentColor: '#00bbbb' },
-  seed: { icon: '⬡', iconColor: '#00afc6', accentColor: '#22c55e' },
-  source: { icon: '⬟', iconColor: '#00afc6', accentColor: '#f97316' },
+const typeStyles: Record<
+  LineageNodeData['nodeType'],
+  {
+    icon: string
+    iconColor: string
+    accentColor: string
+    backgroundColor: string
+    hoverColor: string
+    selectedColor: string
+    iconBgColor: string
+  }
+> = {
+  model: {
+    icon: '◈',
+    iconColor: '#1d4ed8',
+    accentColor: '#3b82f6',
+    backgroundColor: '#eff6ff',
+    hoverColor: '#dbeafe',
+    selectedColor: '#1d4ed8',
+    iconBgColor: '#bfdbfe',
+  },
+  seed: {
+    icon: '⬡',
+    iconColor: '#15803d',
+    accentColor: '#22c55e',
+    backgroundColor: '#f0fdf4',
+    hoverColor: '#dcfce7',
+    selectedColor: '#15803d',
+    iconBgColor: '#bbf7d0',
+  },
+  source: {
+    icon: '⬟',
+    iconColor: '#c2410c',
+    accentColor: '#f97316',
+    backgroundColor: '#fff7ed',
+    hoverColor: '#ffedd5',
+    selectedColor: '#c2410c',
+    iconBgColor: '#fed7aa',
+  },
 }
 
 const hiddenHandleStyle = {
@@ -21,21 +56,25 @@ const LineageNode = ({ data, selected }: NodeProps<LineageNodeData>) => {
   const isDimmed = data.isDimmed ?? false
   const isConnected = data.isConnected ?? false
 
-  const backgroundColor = selected ? '#005e7a' : isHovered ? '#edeff2' : '#f0f2f4'
-  const borderColor = selected
-    ? '#005e7a'
+  const backgroundColor = selected
+    ? typeStyle.selectedColor
     : isHovered
-      ? '#8b969e'
+      ? typeStyle.hoverColor
+      : typeStyle.backgroundColor
+  const borderColor = selected
+    ? typeStyle.selectedColor
+    : isHovered
+      ? typeStyle.accentColor
       : isConnected
         ? typeStyle.accentColor
-        : 'rgba(0,30,60,0.075)'
+        : `${typeStyle.accentColor}55`
   const labelColor = selected ? '#ffffff' : '#313539'
-  const subTextColor = selected ? '#c9eaf0' : '#8b969e'
-  const iconBgColor = selected ? '#00475c' : '#e8eaec'
-  const iconColor = selected ? '#00bbbb' : typeStyle.iconColor
+  const subTextColor = selected ? 'rgba(255,255,255,0.75)' : '#5e666c'
+  const iconBgColor = selected ? 'rgba(255,255,255,0.2)' : typeStyle.iconBgColor
+  const iconColor = selected ? '#ffffff' : typeStyle.iconColor
   const boxShadow = selected
-    ? '0 0 0 2px rgba(0,94,122,0.4), 0 4px 12px rgba(0,0,0,0.15)'
-    : '0 2px 8px rgba(0,0,0,0.08)'
+    ? `0 0 0 2px ${typeStyle.accentColor}66, 0 4px 12px rgba(0,0,0,0.15)`
+    : '0 2px 8px rgba(0,0,0,0.10)'
 
   return (
     <div
