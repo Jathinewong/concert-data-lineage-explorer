@@ -4,6 +4,7 @@ import ReactFlow, {
   Background,
   BackgroundVariant,
   Controls,
+  MarkerType,
   MiniMap,
   type Edge,
   type Node,
@@ -157,7 +158,7 @@ const LineageGraph = () => {
     () =>
       parsedGraph.edges.map((edge) => ({
         ...edge,
-        type: 'smoothstep',
+        type: 'default',
         animated: false,
         style: {
           stroke: '#2d3154',
@@ -272,14 +273,22 @@ const LineageGraph = () => {
       visibleEdges.map((edge) => {
         const hasSelection = selectedNodeId !== null
         const isHighlighted = upstreamEdgeIds.has(edge.id) || downstreamEdgeIds.has(edge.id)
+        const isDimmed = hasSelection && !isHighlighted
 
         return {
           ...edge,
-          animated: false,
+          type: 'default',
+          animated: isHighlighted,
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            width: 16,
+            height: 16,
+            color: isHighlighted ? '#3b82f6' : '#4f5a8a',
+          },
           style: {
-            stroke: isHighlighted ? '#3b82f6' : '#2d3154',
+            stroke: isHighlighted ? '#3b82f6' : '#4f5a8a',
             strokeWidth: isHighlighted ? 2.5 : 1.5,
-            opacity: hasSelection && !isHighlighted ? 0.1 : 1,
+            opacity: isDimmed ? 0.1 : 0.8,
           },
         }
       }),
