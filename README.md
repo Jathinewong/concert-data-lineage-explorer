@@ -15,7 +15,7 @@ An interactive lineage map from raw source data to final published reports, powe
 - Node colour-coding (model/seed/source)
 - Click node → sidebar with metadata + columns
 
-### 🔜 Phase 3 — Search & Filtering
+### ✅ Phase 3 — Search & Filtering *(Done)*
 - Fuse.js fuzzy search over model/column names
 - Highlight upstream/downstream lineage paths on click
 - Filter by node type (models/seeds/sources)
