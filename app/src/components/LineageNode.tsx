@@ -3,9 +3,9 @@ import { Handle, Position, type NodeProps } from 'reactflow'
 import type { LineageNodeData } from '../types'
 
 const typeStyles: Record<LineageNodeData['nodeType'], { icon: string; iconColor: string; accentColor: string }> = {
-  model: { icon: '◈', iconColor: '#60a5fa', accentColor: '#3b82f6' },
-  seed: { icon: '⬡', iconColor: '#4ade80', accentColor: '#22c55e' },
-  source: { icon: '⬟', iconColor: '#fb923c', accentColor: '#f97316' },
+  model: { icon: '◈', iconColor: '#00afc6', accentColor: '#00bbbb' },
+  seed: { icon: '⬡', iconColor: '#00afc6', accentColor: '#22c55e' },
+  source: { icon: '⬟', iconColor: '#00afc6', accentColor: '#f97316' },
 }
 
 const hiddenHandleStyle = {
@@ -21,17 +21,21 @@ const LineageNode = ({ data, selected }: NodeProps<LineageNodeData>) => {
   const isDimmed = data.isDimmed ?? false
   const isConnected = data.isConnected ?? false
 
-  const backgroundColor = selected ? '#dbeafe' : isHovered ? '#f0f7ff' : '#ffffff'
+  const backgroundColor = selected ? '#005e7a' : isHovered ? '#edeff2' : '#f0f2f4'
   const borderColor = selected
-    ? '#3b82f6'
+    ? '#005e7a'
     : isHovered
-      ? '#7ab8d4'
+      ? '#8b969e'
       : isConnected
         ? typeStyle.accentColor
-        : '#b0cfe0'
+        : 'rgba(0,30,60,0.075)'
+  const labelColor = selected ? '#ffffff' : '#313539'
+  const subTextColor = selected ? '#c9eaf0' : '#8b969e'
+  const iconBgColor = selected ? '#00475c' : '#e8eaec'
+  const iconColor = selected ? '#00bbbb' : typeStyle.iconColor
   const boxShadow = selected
-    ? '0 0 0 2px rgba(59,130,246,0.4), 0 4px 12px rgba(0,0,0,0.15)'
-    : '0 2px 8px rgba(0,0,0,0.12)'
+    ? '0 0 0 2px rgba(0,94,122,0.4), 0 4px 12px rgba(0,0,0,0.15)'
+    : '0 2px 8px rgba(0,0,0,0.08)'
 
   return (
     <div
@@ -60,12 +64,12 @@ const LineageNode = ({ data, selected }: NodeProps<LineageNodeData>) => {
           width: 22,
           height: 22,
           borderRadius: '50%',
-          backgroundColor: '#e8f0fe',
+          backgroundColor: iconBgColor,
           border: `1px solid ${typeStyle.accentColor}`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: typeStyle.iconColor,
+          color: iconColor,
           fontSize: 16,
           lineHeight: 1,
           flexShrink: 0,
@@ -78,7 +82,7 @@ const LineageNode = ({ data, selected }: NodeProps<LineageNodeData>) => {
           style={{
             fontSize: 14,
             fontWeight: 600,
-            color: '#1e293b',
+            color: labelColor,
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
@@ -90,7 +94,7 @@ const LineageNode = ({ data, selected }: NodeProps<LineageNodeData>) => {
         <span
           style={{
             fontSize: 11,
-            color: '#64748b',
+            color: subTextColor,
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
