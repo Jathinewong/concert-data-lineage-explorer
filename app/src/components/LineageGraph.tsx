@@ -6,10 +6,15 @@ import ReactFlow, {
   Controls,
   MiniMap,
   type Edge,
-  type Node,
 } from 'reactflow'
 import 'reactflow/dist/style.css'
-import { parseManifest } from '../parseManifest'
+import {
+  BASE_NODE_WIDTH,
+  fetchDbtNodes,
+  layoutGraph,
+  type DbtNode,
+  type LayoutOptions,
+} from '../parseManifest'
 
 interface LineageNodeData {
   label: string
@@ -23,6 +28,12 @@ const nodeColors: Record<LineageNodeData['nodeType'], string> = {
   model: '#3b82f6',
   seed: '#22c55e',
   source: '#f97316',
+}
+
+const DEFAULT_LAYOUT: LayoutOptions = {
+  nodeSpacing: 40,
+  rankSpacing: 120,
+  nodeSizeMultiplier: 1.0,
 }
 
 const styles = {
@@ -102,8 +113,8 @@ const getLineageTraversal = (
 }
 
 const LineageGraph = () => {
-  const [baseNodes, setBaseNodes] = useState<Node<LineageNodeData>[]>([])
-  const [baseEdges, setBaseEdges] = useState<Edge[]>([])
+  const [dbtNodes, setDbtNodes] = useState<DbtNode[]>([])
+  const [layoutOptions, setLayoutOptions] = useState<LayoutOptions>(DEFAULT_LAYOUT)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
@@ -117,15 +128,8 @@ const LineageGraph = () => {
   useEffect(() => {
     const loadGraph = async () => {
       try {
-        const parsed = await parseManifest()
-
-        setBaseNodes(
-          parsed.nodes.map((node) => ({
-            ...node,
-            data: node.data as LineageNodeData,
-          })),
-        )
-        setBaseEdges(parsed.edges.map((edge) => ({ ...edge, type: 'smoothstep' })))
+        const parsedDbtNodes = await fetchDbtNodes()
+        setDbtNodes(parsedDbtNodes)
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : 'Failed to load lineage graph')
       } finally {
@@ -135,6 +139,22 @@ const LineageGraph = () => {
 
     void loadGraph()
   }, [])
+
+  const parsedGraph = useMemo(() => layoutGraph(dbtNodes, layoutOptions), [dbtNodes, layoutOptions])
+
+  const baseNodes = useMemo(
+    () =>
+      parsedGraph.nodes.map((node) => ({
+        ...node,
+        data: node.data as LineageNodeData,
+      })),
+    [parsedGraph.nodes],
+  )
+
+  const baseEdges = useMemo(
+    () => parsedGraph.edges.map((edge) => ({ ...edge, type: 'smoothstep' })),
+    [parsedGraph.edges],
+  )
 
   const selectedNode = useMemo(
     () => baseNodes.find((node) => node.id === selectedNodeId)?.data ?? null,
@@ -226,14 +246,14 @@ const LineageGraph = () => {
                 : isHighlighted
                   ? '#f8fafc'
                   : '#ffffff',
-              padding: 8,
-              width: 240,
-              opacity: hasSelection && !isHighlighted ? 0.25 : 1,
-              boxShadow: isSelected ? '0 0 0 2px rgba(59, 130, 246, 0.35)' : 'none',
-            },
-          }
-        }),
-    [baseNodes, highlightedNodeIds, selectedNodeId, visibleNodeIds],
+               padding: 8,
+               width: BASE_NODE_WIDTH * layoutOptions.nodeSizeMultiplier,
+               opacity: hasSelection && !isHighlighted ? 0.25 : 1,
+               boxShadow: isSelected ? '0 0 0 2px rgba(59, 130, 246, 0.35)' : 'none',
+             },
+           }
+         }),
+    [baseNodes, highlightedNodeIds, layoutOptions.nodeSizeMultiplier, selectedNodeId, visibleNodeIds],
   )
 
   const displayedEdges = useMemo(
@@ -332,6 +352,110 @@ const LineageGraph = () => {
           <p style={{ margin: 0, fontSize: 12, color: '#475569' }}>
             Showing {displayedNodes.length} of {baseNodes.length} nodes
           </p>
+
+          <hr style={{ border: 0, borderTop: '1px solid #e2e8f0', margin: '12px 0' }} />
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <span
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                color: '#94a3b8',
+                letterSpacing: '0.05em',
+                marginBottom: 8,
+              }}
+            >
+              LAYOUT
+            </span>
+            <button
+              type="button"
+              onClick={() => setLayoutOptions(DEFAULT_LAYOUT)}
+              style={{
+                fontSize: 11,
+                padding: '2px 8px',
+                borderRadius: 6,
+                border: '1px solid #cbd5e1',
+                backgroundColor: '#f8fafc',
+                cursor: 'pointer',
+                color: '#475569',
+              }}
+            >
+              Reset
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+            <label htmlFor="node-spacing" style={{ fontSize: 12, color: '#475569', width: 90, flexShrink: 0 }}>
+              Node Spacing
+            </label>
+            <input
+              id="node-spacing"
+              type="range"
+              min={10}
+              max={150}
+              step={5}
+              value={layoutOptions.nodeSpacing}
+              onChange={(event) =>
+                setLayoutOptions((previous) => ({
+                  ...previous,
+                  nodeSpacing: Number(event.target.value),
+                }))
+              }
+              style={{ flex: 1, accentColor: '#3b82f6' }}
+            />
+            <span style={{ fontSize: 12, color: '#1e293b', width: 36, textAlign: 'right' }}>
+              {layoutOptions.nodeSpacing}
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+            <label htmlFor="rank-spacing" style={{ fontSize: 12, color: '#475569', width: 90, flexShrink: 0 }}>
+              Rank Spacing
+            </label>
+            <input
+              id="rank-spacing"
+              type="range"
+              min={40}
+              max={300}
+              step={10}
+              value={layoutOptions.rankSpacing}
+              onChange={(event) =>
+                setLayoutOptions((previous) => ({
+                  ...previous,
+                  rankSpacing: Number(event.target.value),
+                }))
+              }
+              style={{ flex: 1, accentColor: '#3b82f6' }}
+            />
+            <span style={{ fontSize: 12, color: '#1e293b', width: 36, textAlign: 'right' }}>
+              {layoutOptions.rankSpacing}
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+            <label htmlFor="node-size" style={{ fontSize: 12, color: '#475569', width: 90, flexShrink: 0 }}>
+              Node Size
+            </label>
+            <input
+              id="node-size"
+              type="range"
+              min={0.5}
+              max={2.0}
+              step={0.1}
+              value={layoutOptions.nodeSizeMultiplier}
+              onChange={(event) =>
+                setLayoutOptions((previous) => ({
+                  ...previous,
+                  nodeSizeMultiplier: Number(event.target.value),
+                }))
+              }
+              style={{ flex: 1, accentColor: '#3b82f6' }}
+            />
+            <span style={{ fontSize: 12, color: '#1e293b', width: 36, textAlign: 'right' }}>
+              {layoutOptions.nodeSizeMultiplier.toFixed(1)}×
+            </span>
+          </div>
         </section>
 
         <ReactFlow
