@@ -1,6 +1,3 @@
-app/public/manifest.json
-app/public/catalog.json
-
 # macOS
 .DS_Store
 **/.DS_Store

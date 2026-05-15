@@ -2,6 +2,9 @@
 
 An interactive lineage map from raw source data to final published reports, powered by dbt + ReactFlow.
 
+## Live Demo
+🔗 https://jathinewong.github.io/concert-data-lineage-explorer/
+
 ## Phases
 
 ### ✅ Phase 1 — Dev Environment Setup *(Done)*
@@ -20,6 +23,6 @@ An interactive lineage map from raw source data to final published reports, powe
 - Highlight upstream/downstream lineage paths on click
 - Filter by node type (models/seeds/sources)
 
-### 🔜 Phase 4 — CI/CD & Deployment
-- GitHub Pages deployment
-- Auto-refresh lineage when dbt runs in CI
+### ✅ Phase 4 — CI/CD & Deployment *(Done)*
+- GitHub Pages deployment on push to `main`
+- Manual + scheduled dbt artifact refresh workflow
