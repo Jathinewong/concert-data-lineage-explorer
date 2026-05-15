@@ -16,6 +16,12 @@ export interface ParsedGraph {
   edges: Edge[]
 }
 
+export interface LayoutOptions {
+  nodeSpacing: number
+  rankSpacing: number
+  nodeSizeMultiplier: number
+}
+
 type DbtNodeType = DbtNode['nodeType']
 
 interface ManifestRelation {
@@ -43,8 +49,14 @@ interface CatalogFile {
   sources?: Record<string, CatalogRelation>
 }
 
-const NODE_WIDTH = 240
-const NODE_HEIGHT = 88
+export const BASE_NODE_WIDTH = 240
+export const BASE_NODE_HEIGHT = 88
+
+const DEFAULT_LAYOUT_OPTIONS: LayoutOptions = {
+  nodeSpacing: 40,
+  rankSpacing: 120,
+  nodeSizeMultiplier: 1.0,
+}
 
 const isDbtNodeType = (resourceType: string): resourceType is DbtNodeType => {
   return (['model', 'seed', 'source'] as const).includes(resourceType as DbtNodeType)
@@ -72,13 +84,15 @@ const fetchJson = async <T>(url: string): Promise<T> => {
   return (await response.json()) as T
 }
 
-const layoutNodes = (nodes: Node[], edges: Edge[]): Node[] => {
+const layoutNodes = (nodes: Node[], edges: Edge[], options: LayoutOptions): Node[] => {
+  const nodeWidth = BASE_NODE_WIDTH * options.nodeSizeMultiplier
+  const nodeHeight = BASE_NODE_HEIGHT * options.nodeSizeMultiplier
   const graph = new dagre.graphlib.Graph()
   graph.setDefaultEdgeLabel(() => ({}))
-  graph.setGraph({ rankdir: 'LR', nodesep: 40, ranksep: 120 })
+  graph.setGraph({ rankdir: 'LR', nodesep: options.nodeSpacing, ranksep: options.rankSpacing })
 
   nodes.forEach((node) => {
-    graph.setNode(node.id, { width: NODE_WIDTH, height: NODE_HEIGHT })
+    graph.setNode(node.id, { width: nodeWidth, height: nodeHeight })
   })
 
   edges.forEach((edge) => {
@@ -93,8 +107,8 @@ const layoutNodes = (nodes: Node[], edges: Edge[]): Node[] => {
     return {
       ...node,
       position: {
-        x: position.x - NODE_WIDTH / 2,
-        y: position.y - NODE_HEIGHT / 2,
+        x: position.x - nodeWidth / 2,
+        y: position.y - nodeHeight / 2,
       },
       sourcePosition: Position.Right,
       targetPosition: Position.Left,
@@ -102,7 +116,7 @@ const layoutNodes = (nodes: Node[], edges: Edge[]): Node[] => {
   })
 }
 
-export const parseManifest = async (): Promise<ParsedGraph> => {
+export const fetchDbtNodes = async (): Promise<DbtNode[]> => {
   const [manifest, catalog] = await Promise.all([
     fetchJson<ManifestFile>(`${import.meta.env.BASE_URL}manifest.json`),
     fetchJson<CatalogFile>(`${import.meta.env.BASE_URL}catalog.json`),
@@ -130,6 +144,10 @@ export const parseManifest = async (): Promise<ParsedGraph> => {
       }
     })
 
+  return dbtNodes
+}
+
+export const layoutGraph = (dbtNodes: DbtNode[], options: LayoutOptions): ParsedGraph => {
   const nodeIds = new Set(dbtNodes.map((node) => node.id))
 
   const edges: Edge[] = dbtNodes.flatMap((node) =>
@@ -155,7 +173,13 @@ export const parseManifest = async (): Promise<ParsedGraph> => {
   }))
 
   return {
-    nodes: layoutNodes(reactFlowNodes, edges),
+    nodes: layoutNodes(reactFlowNodes, edges, options),
     edges,
   }
+}
+
+export const parseManifest = async (): Promise<ParsedGraph> => {
+  const dbtNodes = await fetchDbtNodes()
+
+  return layoutGraph(dbtNodes, DEFAULT_LAYOUT_OPTIONS)
 }
