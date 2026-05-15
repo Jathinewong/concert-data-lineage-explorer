@@ -1,13 +1,19 @@
 import dagre from 'dagre'
 import { type Edge, Position, type Node } from 'reactflow'
 
+export interface ColumnInfo {
+  name: string
+  description: string
+}
+
 export interface DbtNode {
   id: string
   label: string
   nodeType: 'model' | 'seed' | 'source'
   schema: string
   description: string
-  columns: string[]
+  columns: ColumnInfo[]
+  rawCode: string
   dependsOn: string[]
 }
 
@@ -29,6 +35,8 @@ interface ManifestRelation {
   resource_type: string
   schema?: string
   description?: string
+  raw_code?: string
+  columns?: Record<string, { description?: string }>
   depends_on?: {
     nodes?: string[]
   }
@@ -132,6 +140,13 @@ export const fetchDbtNodes = async (): Promise<DbtNode[]> => {
     .map(([id, relation]) => {
       const nodeType = relation.resource_type as DbtNodeType
       const catalogRelation = getCatalogRelation(catalog, nodeType, id)
+      const catalogColumnNames = Object.keys(catalogRelation?.columns ?? {})
+      const manifestColumns = relation.columns ?? {}
+
+      const columns: ColumnInfo[] = catalogColumnNames.map((name) => ({
+        name,
+        description: manifestColumns[name]?.description ?? '',
+      }))
 
       return {
         id,
@@ -139,7 +154,8 @@ export const fetchDbtNodes = async (): Promise<DbtNode[]> => {
         nodeType,
         schema: relation.schema ?? '',
         description: catalogRelation?.description ?? relation.description ?? '',
-        columns: Object.keys(catalogRelation?.columns ?? {}),
+        columns,
+        rawCode: relation.raw_code ?? '',
         dependsOn: relation.depends_on?.nodes ?? [],
       }
     })
@@ -168,6 +184,7 @@ export const layoutGraph = (dbtNodes: DbtNode[], options: LayoutOptions): Parsed
       schema: node.schema,
       description: node.description,
       columns: node.columns,
+      rawCode: node.rawCode,
     },
     position: { x: 0, y: 0 },
   }))

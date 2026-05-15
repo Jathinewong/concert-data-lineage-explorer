@@ -12,6 +12,7 @@ import {
   BASE_NODE_WIDTH,
   fetchDbtNodes,
   layoutGraph,
+  type ColumnInfo,
   type DbtNode,
   type LayoutOptions,
 } from '../parseManifest'
@@ -21,7 +22,8 @@ interface LineageNodeData {
   nodeType: 'model' | 'seed' | 'source'
   schema: string
   description: string
-  columns: string[]
+  columns: ColumnInfo[]
+  rawCode: string
 }
 
 const nodeColors: Record<LineageNodeData['nodeType'], string> = {
@@ -118,6 +120,7 @@ const LineageGraph = () => {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
+  const [showRawSql, setShowRawSql] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [nodeTypeFilters, setNodeTypeFilters] = useState<Record<LineageNodeData['nodeType'], boolean>>({
     model: true,
@@ -164,7 +167,7 @@ const LineageGraph = () => {
   const fuse = useMemo(
     () =>
       new Fuse(baseNodes, {
-        keys: ['data.label', 'data.columns'],
+        keys: ['data.label', 'data.columns.name', 'data.columns.description'],
         threshold: 0.35,
         ignoreLocation: true,
       }),
@@ -462,8 +465,14 @@ const LineageGraph = () => {
           nodes={displayedNodes}
           edges={displayedEdges}
           fitView
-          onNodeClick={(_, node) => setSelectedNodeId(node.id)}
-          onPaneClick={() => setSelectedNodeId(null)}
+          onNodeClick={(_, node) => {
+            setSelectedNodeId(node.id)
+            setShowRawSql(false)
+          }}
+          onPaneClick={() => {
+            setSelectedNodeId(null)
+            setShowRawSql(false)
+          }}
         >
           <MiniMap position="bottom-right" zoomable pannable />
           <Controls position="bottom-left" />
@@ -495,19 +504,71 @@ const LineageGraph = () => {
             {selectedNode.description || 'No description available.'}
           </p>
           <h3 style={{ margin: '0 0 8px', fontSize: 12, fontWeight: 600, textTransform: 'uppercase' }}>
-            Columns
+            COLUMNS ({selectedNode.columns.length})
           </h3>
           {selectedNode.columns.length === 0 ? (
             <p style={{ margin: 0, fontSize: 14 }}>No columns found.</p>
           ) : (
-            <ul style={{ margin: 0, paddingLeft: 16, fontSize: 14 }}>
+            <div style={{ margin: 0 }}>
               {selectedNode.columns.map((column) => (
-                <li key={column} style={{ marginBottom: 4 }}>
-                  {column}
-                </li>
+                <div key={column.name}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: '#1e293b', margin: 0 }}>{column.name}</p>
+                  {column.description ? (
+                    <p style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic', margin: '2px 0 8px 12px' }}>
+                      └─ {column.description}
+                    </p>
+                  ) : (
+                    <p style={{ fontSize: 12, color: '#cbd5e1', fontStyle: 'italic', margin: '2px 0 8px 12px' }}>
+                      └─ No description
+                    </p>
+                  )}
+                </div>
               ))}
-            </ul>
+            </div>
           )}
+
+          {selectedNode.rawCode ? (
+            <>
+              <hr style={{ border: 0, borderTop: '1px solid #e2e8f0', margin: '12px 0' }} />
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <h3 style={{ margin: 0, fontSize: 12, fontWeight: 600, textTransform: 'uppercase' }}>RAW SQL</h3>
+                <button
+                  type="button"
+                  onClick={() => setShowRawSql((previous) => !previous)}
+                  style={{
+                    fontSize: 11,
+                    padding: '2px 8px',
+                    borderRadius: 6,
+                    border: '1px solid #cbd5e1',
+                    backgroundColor: '#f8fafc',
+                    cursor: 'pointer',
+                    color: '#475569',
+                  }}
+                >
+                  {showRawSql ? '▲ hide' : '▼ show'}
+                </button>
+              </div>
+              {showRawSql ? (
+                <pre
+                  style={{
+                    fontFamily: 'monospace',
+                    fontSize: 12,
+                    backgroundColor: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: 6,
+                    padding: 12,
+                    overflowX: 'auto',
+                    overflowY: 'auto',
+                    whiteSpace: 'pre',
+                    maxHeight: 400,
+                    margin: '8px 0 0',
+                  }}
+                >
+                  {selectedNode.rawCode}
+                </pre>
+              ) : null}
+            </>
+          ) : null}
         </aside>
       ) : null}
     </div>
