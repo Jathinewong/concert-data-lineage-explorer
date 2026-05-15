@@ -303,7 +303,7 @@ const LineageGraph = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: '#13152a',
+          backgroundColor: '#3d7a9a',
         }}
       >
         <div
@@ -328,7 +328,7 @@ const LineageGraph = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: '#13152a',
+          backgroundColor: '#3d7a9a',
           color: '#fda4af',
           textAlign: 'center',
           padding: 16,
@@ -342,7 +342,7 @@ const LineageGraph = () => {
 
   return (
     <div style={{ ...styles.full, display: 'flex' }}>
-      <div style={{ ...styles.graphContainer, backgroundColor: '#13152a' }}>
+      <div style={{ ...styles.graphContainer, backgroundColor: '#3d7a9a' }}>
         <section style={styles.controlsPanel} aria-label="Search and filters">
           <input
             className="lineage-search-input"
@@ -497,7 +497,7 @@ const LineageGraph = () => {
             setSelectedNodeId(null)
             setShowRawSql(false)
           }}
-          style={{ backgroundColor: '#13152a' }}
+          style={{ backgroundColor: '#3d7a9a' }}
         >
           <MiniMap
             position="bottom-right"
@@ -505,10 +505,10 @@ const LineageGraph = () => {
             pannable
             style={{ backgroundColor: '#1a1d35', border: '1px solid #2d3154' }}
             nodeColor={(node: Node) => nodeColors[(node.data as LineageNodeData).nodeType]}
-            maskColor="rgba(19,21,42,0.7)"
+            maskColor="rgba(61,122,154,0.7)"
           />
           <Controls position="bottom-left" />
-          <Background variant={BackgroundVariant.Dots} gap={16} size={1} color="#1e2132" />
+          <Background variant={BackgroundVariant.Dots} gap={16} size={1} color="#2d6a8a" />
         </ReactFlow>
       </div>
 
@@ -592,9 +592,9 @@ const LineageGraph = () => {
                     style={{
                       fontFamily: 'monospace',
                       fontSize: 12,
-                      backgroundColor: '#13152a',
-                      border: '1px solid #2d3154',
-                      color: '#94a3b8',
+                      backgroundColor: '#3d7a9a',
+                      border: '1px solid #2d6a8a',
+                      color: '#f1f5f9',
                       borderRadius: 6,
                     padding: 12,
                     overflowX: 'auto',
