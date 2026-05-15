@@ -21,17 +21,17 @@ const LineageNode = ({ data, selected }: NodeProps<LineageNodeData>) => {
   const isDimmed = data.isDimmed ?? false
   const isConnected = data.isConnected ?? false
 
-  const backgroundColor = selected ? '#1e3a5f' : isHovered ? '#252840' : '#1e2132'
+  const backgroundColor = selected ? '#dbeafe' : isHovered ? '#f0f7ff' : '#ffffff'
   const borderColor = selected
     ? '#3b82f6'
     : isHovered
-      ? '#4f5a8a'
+      ? '#7ab8d4'
       : isConnected
         ? typeStyle.accentColor
-        : '#2d3154'
+        : '#b0cfe0'
   const boxShadow = selected
-    ? '0 0 0 2px rgba(59,130,246,0.4), 0 2px 8px rgba(0,0,0,0.4)'
-    : '0 2px 8px rgba(0,0,0,0.4)'
+    ? '0 0 0 2px rgba(59,130,246,0.4), 0 4px 12px rgba(0,0,0,0.15)'
+    : '0 2px 8px rgba(0,0,0,0.12)'
 
   return (
     <div
@@ -51,6 +51,7 @@ const LineageNode = ({ data, selected }: NodeProps<LineageNodeData>) => {
         alignItems: 'center',
         gap: 10,
         opacity: isDimmed ? 0.3 : 1,
+        transition: 'background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease',
       }}
     >
       <Handle type="target" position={Position.Left} style={hiddenHandleStyle} />
@@ -59,7 +60,7 @@ const LineageNode = ({ data, selected }: NodeProps<LineageNodeData>) => {
           width: 22,
           height: 22,
           borderRadius: '50%',
-          backgroundColor: '#252840',
+          backgroundColor: '#e8f0fe',
           border: `1px solid ${typeStyle.accentColor}`,
           display: 'flex',
           alignItems: 'center',
@@ -77,7 +78,7 @@ const LineageNode = ({ data, selected }: NodeProps<LineageNodeData>) => {
           style={{
             fontSize: 14,
             fontWeight: 600,
-            color: '#f1f5f9',
+            color: '#1e293b',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
