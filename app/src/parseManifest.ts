@@ -104,8 +104,8 @@ const layoutNodes = (nodes: Node[], edges: Edge[]): Node[] => {
 
 export const parseManifest = async (): Promise<ParsedGraph> => {
   const [manifest, catalog] = await Promise.all([
-    fetchJson<ManifestFile>('/manifest.json'),
-    fetchJson<CatalogFile>('/catalog.json'),
+    fetchJson<ManifestFile>(`${import.meta.env.BASE_URL}manifest.json`),
+    fetchJson<CatalogFile>(`${import.meta.env.BASE_URL}catalog.json`),
   ])
 
   const relations = [

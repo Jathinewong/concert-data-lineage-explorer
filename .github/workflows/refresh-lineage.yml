@@ -1,0 +1,45 @@
+name: Refresh dbt lineage artifacts
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Prepare dbt artifacts
+        run: |
+          mkdir -p target
+          # Replace this placeholder with the real dbt CI steps, for example:
+          # dbt run
+          # dbt docs generate
+          cp app/public/manifest.json target/manifest.json
+          cp app/public/catalog.json target/catalog.json
+
+      - name: Refresh published lineage artifacts
+        run: |
+          mkdir -p app/public
+          cp target/manifest.json app/public/manifest.json
+          cp target/catalog.json app/public/catalog.json
+
+      - name: Commit refreshed artifacts
+        run: |
+          if git diff --quiet -- app/public/manifest.json app/public/catalog.json; then
+            echo "No lineage artifact changes detected."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/public/manifest.json app/public/catalog.json
+          git commit -m "chore: refresh dbt lineage artifacts"
+          git push origin HEAD:main
