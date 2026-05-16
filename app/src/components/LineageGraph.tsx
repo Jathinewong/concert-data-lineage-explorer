@@ -261,7 +261,7 @@ const LineageGraph = () => {
               height: BASE_NODE_HEIGHT * layoutOptions.nodeSizeMultiplier,
               padding: 0,
               border: 'none',
-              background: 'transparent',
+              // Do NOT set background here — let LineageNode control its own background
             },
           }
         }),
@@ -589,13 +589,13 @@ const LineageGraph = () => {
               </div>
               {showRawSql ? (
                 <pre
-                    style={{
-                      fontFamily: 'monospace',
-                      fontSize: 12,
-                      backgroundColor: '#3d7a9a',
-                      border: '1px solid #2d6a8a',
-                      color: '#f1f5f9',
-                      borderRadius: 6,
+                  style={{
+                    fontFamily: 'monospace',
+                    fontSize: 12,
+                    backgroundColor: '#3d7a9a',
+                    border: '1px solid #2d6a8a',
+                    color: '#f1f5f9',
+                    borderRadius: 6,
                     padding: 12,
                     overflowX: 'auto',
                     overflowY: 'auto',
