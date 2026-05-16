@@ -63,11 +63,9 @@ const LineageNode = ({ data, selected }: NodeProps<LineageNodeData>) => {
       : typeStyle.backgroundColor
   const borderColor = selected
     ? typeStyle.selectedColor
-    : isHovered
+    : isHovered || isConnected
       ? typeStyle.accentColor
-      : isConnected
-        ? typeStyle.accentColor
-        : `${typeStyle.accentColor}55`
+      : `${typeStyle.accentColor}55`
   const labelColor = selected ? '#ffffff' : '#313539'
   const subTextColor = selected ? 'rgba(255,255,255,0.75)' : '#5e666c'
   const iconBgColor = selected ? 'rgba(255,255,255,0.2)' : typeStyle.iconBgColor
