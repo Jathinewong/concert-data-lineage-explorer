@@ -16,28 +16,28 @@ const typeStyles: Record<
 > = {
   model: {
     icon: '◈',
-    iconColor: '#1d4ed8',
+    iconColor: '#1e40af',
     accentColor: '#3b82f6',
-    backgroundColor: '#eff6ff',
-    hoverColor: '#dbeafe',
+    backgroundColor: '#93c5fd',
+    hoverColor: '#60a5fa',
     selectedColor: '#1d4ed8',
     iconBgColor: '#bfdbfe',
   },
   seed: {
     icon: '⬡',
-    iconColor: '#15803d',
+    iconColor: '#14532d',
     accentColor: '#22c55e',
-    backgroundColor: '#f0fdf4',
-    hoverColor: '#dcfce7',
+    backgroundColor: '#86efac',
+    hoverColor: '#4ade80',
     selectedColor: '#15803d',
     iconBgColor: '#bbf7d0',
   },
   source: {
     icon: '⬟',
-    iconColor: '#c2410c',
+    iconColor: '#7c2d12',
     accentColor: '#f97316',
-    backgroundColor: '#fff7ed',
-    hoverColor: '#ffedd5',
+    backgroundColor: '#fdba74',
+    hoverColor: '#fb923c',
     selectedColor: '#c2410c',
     iconBgColor: '#fed7aa',
   },
@@ -65,9 +65,9 @@ const LineageNode = ({ data, selected }: NodeProps<LineageNodeData>) => {
     ? typeStyle.selectedColor
     : isHovered || isConnected
       ? typeStyle.accentColor
-      : `${typeStyle.accentColor}55`
-  const labelColor = selected ? '#ffffff' : '#313539'
-  const subTextColor = selected ? 'rgba(255,255,255,0.75)' : '#5e666c'
+      : `${typeStyle.accentColor}99`
+  const labelColor = selected ? '#ffffff' : '#1e293b'
+  const subTextColor = selected ? 'rgba(255,255,255,0.75)' : '#334155'
   const iconBgColor = selected ? 'rgba(255,255,255,0.2)' : typeStyle.iconBgColor
   const iconColor = selected ? '#ffffff' : typeStyle.iconColor
   const boxShadow = selected
