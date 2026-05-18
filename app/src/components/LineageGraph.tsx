@@ -261,7 +261,6 @@ const LineageGraph = () => {
               height: BASE_NODE_HEIGHT * layoutOptions.nodeSizeMultiplier,
               padding: 0,
               border: 'none',
-              // Do NOT set background here — let LineageNode control its own background
             },
           }
         }),
