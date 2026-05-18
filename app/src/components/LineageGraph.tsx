@@ -177,8 +177,9 @@ const LineageGraph = () => {
     () =>
       new Fuse(baseNodes, {
         keys: ['data.label', 'data.columns.name', 'data.columns.description'],
-        threshold: 0.35,
+        threshold: 0.1,
         ignoreLocation: true,
+        minMatchCharLength: 3,
       }),
     [baseNodes],
   )
