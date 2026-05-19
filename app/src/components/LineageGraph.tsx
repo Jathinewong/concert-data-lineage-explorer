@@ -33,7 +33,14 @@ const DEFAULT_LAYOUT: LayoutOptions = {
   nodeSizeMultiplier: 1.0,
 }
 
-type LineageMode = 'match-only' | 'immediate' | 'full'
+type LineageMode = 'match-only' | 'immediate' | 'full' | 'full-graph'
+
+const LINEAGE_MODE_LABELS: Record<LineageMode, string> = {
+  'match-only': 'Match',
+  'immediate': 'Immediate',
+  'full': 'Full',
+  'full-graph': 'Full Graph',
+}
 
 const styles = {
   full: { width: '100%', height: '100%' } as const,
@@ -206,11 +213,45 @@ const LineageGraph = () => {
     return new Set(fuse.search(normalizedQuery).map((result) => result.item.id))
   }, [baseNodes, fuse, searchQuery])
 
+  // For full-graph mode: compute all highlighted node/edge ids (matched + full lineage)
+  const searchHighlightedNodeIds = useMemo(() => {
+    const normalizedQuery = searchQuery.trim()
+    if (!normalizedQuery || lineageMode !== 'full-graph') return new Set<string>()
+
+    const highlighted = new Set(searchMatchedNodeIds)
+    searchMatchedNodeIds.forEach((matchedId) => {
+      const { nodeIds: upstream } = getLineageTraversal(matchedId, baseEdges, 'upstream')
+      const { nodeIds: downstream } = getLineageTraversal(matchedId, baseEdges, 'downstream')
+      upstream.forEach((id) => highlighted.add(id))
+      downstream.forEach((id) => highlighted.add(id))
+    })
+    return highlighted
+  }, [searchMatchedNodeIds, lineageMode, baseEdges, searchQuery])
+
+  const searchHighlightedEdgeIds = useMemo(() => {
+    const normalizedQuery = searchQuery.trim()
+    if (!normalizedQuery || lineageMode !== 'full-graph') return new Set<string>()
+
+    const highlightedEdges = new Set<string>()
+    searchMatchedNodeIds.forEach((matchedId) => {
+      const { edgeIds: upstreamEdges } = getLineageTraversal(matchedId, baseEdges, 'upstream')
+      const { edgeIds: downstreamEdges } = getLineageTraversal(matchedId, baseEdges, 'downstream')
+      upstreamEdges.forEach((id) => highlightedEdges.add(id))
+      downstreamEdges.forEach((id) => highlightedEdges.add(id))
+    })
+    return highlightedEdges
+  }, [searchMatchedNodeIds, lineageMode, baseEdges, searchQuery])
+
   // Expand matched nodes with lineage neighbours based on mode
   const expandedNodeIds = useMemo(() => {
     const normalizedQuery = searchQuery.trim()
 
-    if (!normalizedQuery || lineageMode === 'match-only') {
+    // full-graph: show all nodes (dimming handled at render time)
+    if (!normalizedQuery || lineageMode === 'full-graph') {
+      return new Set(baseNodes.map((node) => node.id))
+    }
+
+    if (lineageMode === 'match-only') {
       return searchMatchedNodeIds
     }
 
@@ -229,7 +270,7 @@ const LineageGraph = () => {
     })
 
     return expanded
-  }, [searchMatchedNodeIds, lineageMode, baseEdges, searchQuery])
+  }, [searchMatchedNodeIds, lineageMode, baseEdges, searchQuery, baseNodes])
 
   const visibleNodeIds = useMemo(
     () =>
@@ -277,6 +318,8 @@ const LineageGraph = () => {
     return highlighted
   }, [downstreamNodeIds, selectedNodeId, upstreamNodeIds])
 
+  const isSearchActive = searchQuery.trim().length > 0
+
   const displayedNodes = useMemo(
     () =>
       baseNodes
@@ -286,13 +329,19 @@ const LineageGraph = () => {
           const isSelected = node.id === selectedNodeId
           const isHighlighted = highlightedNodeIds.has(node.id)
 
+          // In full-graph mode, dim nodes not in the search lineage
+          const isSearchDimmed =
+            isSearchActive &&
+            lineageMode === 'full-graph' &&
+            !searchHighlightedNodeIds.has(node.id)
+
           return {
             ...node,
             selected: isSelected,
             data: {
               ...node.data,
-              isConnected: hasSelection && isHighlighted,
-              isDimmed: hasSelection && !isHighlighted,
+              isConnected: hasSelection ? isHighlighted : (isSearchActive && lineageMode === 'full-graph' && searchHighlightedNodeIds.has(node.id) && !searchMatchedNodeIds.has(node.id)),
+              isDimmed: hasSelection ? !isHighlighted : isSearchDimmed,
             },
             style: {
               width: BASE_NODE_WIDTH * layoutOptions.nodeSizeMultiplier,
@@ -302,7 +351,7 @@ const LineageGraph = () => {
             },
           }
         }),
-    [baseNodes, highlightedNodeIds, layoutOptions.nodeSizeMultiplier, selectedNodeId, visibleNodeIds],
+    [baseNodes, highlightedNodeIds, layoutOptions.nodeSizeMultiplier, selectedNodeId, visibleNodeIds, isSearchActive, lineageMode, searchHighlightedNodeIds, searchMatchedNodeIds],
   )
 
   const displayedEdges = useMemo(
@@ -312,24 +361,34 @@ const LineageGraph = () => {
         const isHighlighted = upstreamEdgeIds.has(edge.id) || downstreamEdgeIds.has(edge.id)
         const isDimmed = hasSelection && !isHighlighted
 
+        // In full-graph mode, highlight edges in the search lineage
+        const isSearchEdgeHighlighted =
+          isSearchActive && lineageMode === 'full-graph' && searchHighlightedEdgeIds.has(edge.id)
+        const isSearchEdgeDimmed =
+          isSearchActive && lineageMode === 'full-graph' && !searchHighlightedEdgeIds.has(edge.id)
+
+        const strokeColor = hasSelection
+          ? isHighlighted ? '#3b82f6' : '#4f5a8a'
+          : isSearchEdgeHighlighted ? '#3b82f6' : '#4f5a8a'
+
         return {
           ...edge,
           type: 'default',
-          animated: isHighlighted,
+          animated: hasSelection ? isHighlighted : isSearchEdgeHighlighted,
           markerEnd: {
             type: MarkerType.ArrowClosed,
             width: 16,
             height: 16,
-            color: isHighlighted ? '#3b82f6' : '#4f5a8a',
+            color: strokeColor,
           },
           style: {
-            stroke: isHighlighted ? '#3b82f6' : '#4f5a8a',
-            strokeWidth: isHighlighted ? 2.5 : 1.5,
-            opacity: isDimmed ? 0.1 : 0.8,
+            stroke: strokeColor,
+            strokeWidth: (hasSelection ? isHighlighted : isSearchEdgeHighlighted) ? 2.5 : 1.5,
+            opacity: (hasSelection ? isDimmed : isSearchEdgeDimmed) ? 0.1 : 0.8,
           },
         }
       }),
-    [downstreamEdgeIds, selectedNodeId, upstreamEdgeIds, visibleEdges],
+    [downstreamEdgeIds, selectedNodeId, upstreamEdgeIds, visibleEdges, isSearchActive, lineageMode, searchHighlightedEdgeIds],
   )
 
   if (isLoading) {
@@ -377,8 +436,6 @@ const LineageGraph = () => {
     )
   }
 
-  const isSearchActive = searchQuery.trim().length > 0
-
   return (
     <div style={{ ...styles.full, display: 'flex' }}>
       <div style={{ ...styles.graphContainer, backgroundColor: '#3d7a9a' }}>
@@ -397,25 +454,26 @@ const LineageGraph = () => {
               <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.05em' }}>
                 Show Lineage
               </p>
-              <div style={{ display: 'flex', gap: 4 }}>
-                {(['match-only', 'immediate', 'full'] as const).map((mode) => (
+              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                {(['match-only', 'immediate', 'full', 'full-graph'] as const).map((mode) => (
                   <button
                     key={mode}
                     type="button"
                     onClick={() => setLineageMode(mode)}
                     style={{
-                      flex: 1,
+                      flex: '1 1 auto',
                       fontSize: 11,
-                      padding: '4px 0',
+                      padding: '4px 6px',
                       borderRadius: 6,
                       border: `1px solid ${lineageMode === mode ? '#3b82f6' : '#2d3154'}`,
                       backgroundColor: lineageMode === mode ? '#1e3a5f' : '#252840',
                       color: lineageMode === mode ? '#93c5fd' : '#94a3b8',
                       cursor: 'pointer',
                       fontWeight: lineageMode === mode ? 600 : 400,
+                      whiteSpace: 'nowrap',
                     }}
                   >
-                    {mode === 'match-only' ? 'Match' : mode === 'immediate' ? 'Immediate' : 'Full'}
+                    {LINEAGE_MODE_LABELS[mode]}
                   </button>
                 ))}
               </div>
