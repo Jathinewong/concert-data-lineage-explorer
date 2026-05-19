@@ -33,6 +33,8 @@ const DEFAULT_LAYOUT: LayoutOptions = {
   nodeSizeMultiplier: 1.0,
 }
 
+type LineageMode = 'match-only' | 'immediate' | 'full'
+
 const styles = {
   full: { width: '100%', height: '100%' } as const,
   graphContainer: { height: '100%', flex: 1, position: 'relative' } as const,
@@ -112,6 +114,15 @@ const getLineageTraversal = (
   return { nodeIds: visited, edgeIds }
 }
 
+const getImmediateNeighbours = (nodeId: string, edges: Edge[]): Set<string> => {
+  const neighbours = new Set<string>()
+  edges.forEach((edge) => {
+    if (edge.source === nodeId) neighbours.add(edge.target)
+    if (edge.target === nodeId) neighbours.add(edge.source)
+  })
+  return neighbours
+}
+
 const LineageGraph = () => {
   const [dbtNodes, setDbtNodes] = useState<DbtNode[]>([])
   const [layoutOptions, setLayoutOptions] = useState<LayoutOptions>(DEFAULT_LAYOUT)
@@ -120,6 +131,7 @@ const LineageGraph = () => {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [showRawSql, setShowRawSql] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [lineageMode, setLineageMode] = useState<LineageMode>('immediate')
   const [nodeTypeFilters, setNodeTypeFilters] = useState<Record<LineageNodeData['nodeType'], boolean>>({
     model: true,
     seed: true,
@@ -194,16 +206,41 @@ const LineageGraph = () => {
     return new Set(fuse.search(normalizedQuery).map((result) => result.item.id))
   }, [baseNodes, fuse, searchQuery])
 
+  // Expand matched nodes with lineage neighbours based on mode
+  const expandedNodeIds = useMemo(() => {
+    const normalizedQuery = searchQuery.trim()
+
+    if (!normalizedQuery || lineageMode === 'match-only') {
+      return searchMatchedNodeIds
+    }
+
+    const expanded = new Set(searchMatchedNodeIds)
+
+    searchMatchedNodeIds.forEach((matchedId) => {
+      if (lineageMode === 'immediate') {
+        const neighbours = getImmediateNeighbours(matchedId, baseEdges)
+        neighbours.forEach((id) => expanded.add(id))
+      } else if (lineageMode === 'full') {
+        const { nodeIds: upstream } = getLineageTraversal(matchedId, baseEdges, 'upstream')
+        const { nodeIds: downstream } = getLineageTraversal(matchedId, baseEdges, 'downstream')
+        upstream.forEach((id) => expanded.add(id))
+        downstream.forEach((id) => expanded.add(id))
+      }
+    })
+
+    return expanded
+  }, [searchMatchedNodeIds, lineageMode, baseEdges, searchQuery])
+
   const visibleNodeIds = useMemo(
     () =>
       new Set(
         baseNodes
           .filter(
-            (node) => nodeTypeFilters[node.data.nodeType] && searchMatchedNodeIds.has(node.id),
+            (node) => nodeTypeFilters[node.data.nodeType] && expandedNodeIds.has(node.id),
           )
           .map((node) => node.id),
       ),
-    [baseNodes, nodeTypeFilters, searchMatchedNodeIds],
+    [baseNodes, nodeTypeFilters, expandedNodeIds],
   )
 
   const visibleEdges = useMemo(
@@ -340,6 +377,8 @@ const LineageGraph = () => {
     )
   }
 
+  const isSearchActive = searchQuery.trim().length > 0
+
   return (
     <div style={{ ...styles.full, display: 'flex' }}>
       <div style={{ ...styles.graphContainer, backgroundColor: '#3d7a9a' }}>
@@ -352,6 +391,36 @@ const LineageGraph = () => {
             onChange={(event) => setSearchQuery(event.target.value)}
             style={styles.searchInput}
           />
+
+          {isSearchActive && (
+            <div style={{ marginBottom: 12 }}>
+              <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.05em' }}>
+                Show Lineage
+              </p>
+              <div style={{ display: 'flex', gap: 4 }}>
+                {(['match-only', 'immediate', 'full'] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => setLineageMode(mode)}
+                    style={{
+                      flex: 1,
+                      fontSize: 11,
+                      padding: '4px 0',
+                      borderRadius: 6,
+                      border: `1px solid ${lineageMode === mode ? '#3b82f6' : '#2d3154'}`,
+                      backgroundColor: lineageMode === mode ? '#1e3a5f' : '#252840',
+                      color: lineageMode === mode ? '#93c5fd' : '#94a3b8',
+                      cursor: 'pointer',
+                      fontWeight: lineageMode === mode ? 600 : 400,
+                    }}
+                  >
+                    {mode === 'match-only' ? 'Match' : mode === 'immediate' ? 'Immediate' : 'Full'}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div style={{ display: 'flex', gap: 12, marginBottom: 8 }}>
             {(['model', 'seed', 'source'] as const).map((nodeType) => (
